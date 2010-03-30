@@ -9,12 +9,14 @@ namespace AnyService.Win32.API
         public struct ServiceStatus
         {
             public int ServiceType;
-            public int CurrentState;
+            public ApiEnums.ServiceState CurrentState;
             public int ControlsAccepted;
             public int Win32ExitCode;
             public int ServiceSpecificExitCode;
             public int CheckPoint;
             public int WaitHint;
+            public int ProcessId;
+            public int ServiceFlags;
         }
 
         [StructLayout(LayoutKind.Sequential)]

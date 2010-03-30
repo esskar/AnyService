@@ -119,6 +119,23 @@ namespace AnyService
         {
             int retval = 0;
 
+            if (args.Length < 2)
+                throw new ArgumentException("Not enough arguments for 'start' command.");
+            string serviceName = args[1];
+            try
+            {
+
+                Service s = new Service(serviceName);
+                s.Start();
+
+                Console.WriteLine("Successfully started an AnyService called: " + serviceName);
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine("Unable to start service: " + e.Message);
+                retval = -1;
+            }
+
             return retval;
         }
 
@@ -126,6 +143,12 @@ namespace AnyService
         {
             int retval = 0;
 
+            if (args.Length < 2)
+                throw new ArgumentException("Not enough arguments for 'stop' command.");
+            string serviceName = args[1];
+
+            Console.WriteLine("Command not yet implemented. You may call\n\n\tnet stop \"" + serviceName + "\"\n\ninstead.");
+           
             return retval;
         }
 

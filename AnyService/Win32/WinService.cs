@@ -45,101 +45,61 @@ namespace AnyService.Win32
         {
             ServiceBase.Run(this);
         }
+
+        public void Start()
+        {
+            using (WinServiceNative native = new WinServiceNative())
+            {
+                native.Lock();
+                native.Open(this.ServiceName);
+
+                ApiStructs.ServiceStatus ss = native.QueryStatus();
+                if (ss.CurrentState != ApiEnums.ServiceState.SERVICE_STOPPED)
+                    throw new Win32Exception("Cannot start the service because it is already running");
+
+                native.Start();
+            }            
+        }
+
+        public new void Stop()
+        {
+            using (WinServiceNative native = new WinServiceNative())
+            {
+                native.Lock();
+                native.Open(this.ServiceName);
+
+                ApiStructs.ServiceStatus ss = native.QueryStatus();
+                if (ss.CurrentState != ApiEnums.ServiceState.SERVICE_RUNNING)
+                    throw new Win32Exception("Cannot start the service because it is not running");
+            }
+        }
         
 
         public void Uninstall()
         {
 
-            int handle = 0, lockHandle = 0, serviceHandle = 0;
-
-            try
+            using (WinServiceNative native = new WinServiceNative())
             {
-                handle = ApiAdvapi32.OpenSCManagerA(null, null, ApiEnums.ServiceControlManagerType.SC_MANAGER_ALL_ACCESS);
-                if (handle <= 0)
-                    throw new Win32Exception(Marshal.GetLastWin32Error(), "Unable to open the Services Manager.");
-
-                lockHandle = ApiAdvapi32.LockServiceDatabase(handle);
-                if (lockHandle <= 0)
-                    throw new Win32Exception(Marshal.GetLastWin32Error(), "Unable to lock the Services Manager.");
-
-                serviceHandle = ApiAdvapi32.OpenServiceA(handle, this.ServiceName, ApiEnums.ServiceAccessType.SERVICE_ALL_ACCESS);
-                if (serviceHandle <= 0)
-                    throw new Win32Exception("Service does not exist.");
-
-                ApiAdvapi32.DeleteService(serviceHandle);
-            }
-            finally
-            {
-                if (serviceHandle > 0)
-                    ApiAdvapi32.CloseServiceHandle(serviceHandle);
-
-                if (lockHandle > 0)
-                    ApiAdvapi32.UnlockServiceDatabase(lockHandle);
-
-                if (handle > 0)
-                    ApiAdvapi32.CloseServiceHandle(handle);
+                native.Lock();
+                native.Open(this.ServiceName);
+                native.Delete();
             }
         }
 
-        public void Install(bool interactive)
+        public void Install(string arguments)
         {
-            int handle = 0, lockHandle = 0, serviceHandle = 0;
+            string location = Assembly.GetEntryAssembly().Location;
+            if (location.Contains(" "))
+                location = "\"" + location + "\"";
 
-            try
+            string imagePath = string.IsNullOrEmpty(arguments) ? location : string.Format("{0} {1}", location, arguments);
+
+            ApiEnums.ServiceType serviceType = ApiEnums.ServiceType.SERVICE_WIN32_OWN_PROCESS;
+            using (WinServiceNative native = new WinServiceNative())
             {
-                handle = ApiAdvapi32.OpenSCManagerA(null, null, ApiEnums.ServiceControlManagerType.SC_MANAGER_ALL_ACCESS);
-                if (handle <= 0)
-                    throw new Win32Exception(Marshal.GetLastWin32Error(), "Unable to open the Services Manager.");
-
-                lockHandle = ApiAdvapi32.LockServiceDatabase(handle);
-                if (lockHandle <= 0)
-                    throw new Win32Exception(Marshal.GetLastWin32Error(), "Unable to lock the Services Manager.");
-
-                serviceHandle = ApiAdvapi32.OpenServiceA(handle, this.ServiceName, ApiEnums.ServiceAccessType.SERVICE_ALL_ACCESS);
-                if (serviceHandle > 0) // service does exist
-                    throw new Win32Exception("Service already exists.");
-
-                string location = Assembly.GetEntryAssembly().Location;
-                if (location.Contains(" "))
-                    location = "\"" + location + "\"";
-
-                string serviceNameArgument = this.ServiceName;
-                if(serviceNameArgument.Contains(" "))
-                    serviceNameArgument = "\"" + serviceNameArgument + "\"";
-
-                ApiEnums.ServiceType serviceType = ApiEnums.ServiceType.SERVICE_WIN32_OWN_PROCESS;
-                if (interactive)
-                    serviceType |= ApiEnums.ServiceType.SERVICE_INTERACTIVE_PROCESS;
-
-
-                serviceHandle = ApiAdvapi32.CreateServiceA(
-                    handle,
-                    this.ServiceName,
-                    this.DisplayName,
-                    ApiEnums.ServiceControlManagerType.SC_MANAGER_ALL_ACCESS,
-                    serviceType,
-                    ApiEnums.ServiceStartType.SERVICE_AUTO_START,
-                    ApiEnums.ServiceErrorControl.SERVICE_ERROR_NORMAL,
-                    string.Format("{0} run {1}", location, serviceNameArgument),
-                    null,
-                    null,
-                    null, null, null);
-
-                if (serviceHandle == 0)
-                    throw new Win32Exception(Marshal.GetLastWin32Error(), "Unable to install the Service.");                
+                native.Lock();
+                native.Create(this.ServiceName, this.DisplayName, imagePath, serviceType);
             }
-            finally
-            {
-                if (serviceHandle > 0)
-                    ApiAdvapi32.CloseServiceHandle(serviceHandle);
-
-                if (lockHandle > 0)
-                    ApiAdvapi32.UnlockServiceDatabase(lockHandle);
-
-                if (handle > 0)
-                    ApiAdvapi32.CloseServiceHandle(handle);
-            }
-
         }        
     }
 }

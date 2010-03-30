@@ -113,9 +113,13 @@ namespace AnyService
             base.Dispose(disposing);
         }
 
-        public void Install(string externalCommandLine)
+        public new void Install(string externalCommandLine)
         {
-            this.Install(false);
+            string serviceNameArgument = this.ServiceName;
+            if (serviceNameArgument.Contains(" "))
+                serviceNameArgument = "\"" + serviceNameArgument + "\"";
+           
+            base.Install("run " + serviceNameArgument);
             this.ExternalImagePath = externalCommandLine;
         }
     }

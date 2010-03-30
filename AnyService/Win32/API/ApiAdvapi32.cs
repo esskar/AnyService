@@ -64,6 +64,9 @@ namespace AnyService.Win32.API
         [DllImport("advapi32.dll", SetLastError = true)]
         public static extern int DeleteService(int hService);
 
+        [DllImport("advapi32.dll", SetLastError = true)]
+        public static extern bool StartService(int hService, int notUsed1, IntPtr notUsed2);
+
 
         [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Ansi)]
         public static extern int CreateServiceA(
@@ -88,8 +91,18 @@ namespace AnyService.Win32.API
 
         [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Ansi)]
         public static extern bool QueryServiceConfigA(
-            int hService, [MarshalAs(UnmanagedType.Struct)] ref ApiStructs.QueryServiceConfig lpServiceConfig,
+            int hService, 
+            [MarshalAs(UnmanagedType.Struct)] ref ApiStructs.QueryServiceConfig lpServiceConfig,
             int cbBufSize,
-            int pcbBytesNeeded);
+            ref int pcbBytesNeeded);
+
+        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Ansi)]
+        public static extern bool QueryServiceStatusEx(
+            int hService, 
+            int InfoLevel, 
+            [MarshalAs(UnmanagedType.Struct)] ref ApiStructs.ServiceStatus lpServiceStatus,
+            int cbBufSize,
+            ref int pcbBytesNeeded);
+
     }
 }
